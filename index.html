@@ -7,7 +7,33 @@
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style> /* تأثير الأرقام المتغيرة لإعطاء إحساس بالمعالجة الحية */
+    <style> // وظيفة لتحديث إحصائيات النظام بشكل حي
+function startLiveUpdates() {
+    // تحديث زمن الاستجابة بشكل عشوائي بسيط (بين 38ms و 45ms)
+    setInterval(() => {
+        const latencyEl = document.querySelector('.text-yellow-500.font-mono'); // تأكد من الـ class الصحيح
+        if (latencyEl) {
+            const randomLatency = Math.floor(Math.random() * (45 - 38 + 1)) + 38;
+            latencyEl.innerText = randomLatency + "ms";
+        }
+    }, 4000);
+
+    // تحديث عداد صندوق الأمان (زيادة طفيفة تحاكي الأرباح المستمرة)
+    setInterval(() => {
+        const vaultEl = document.querySelector('.text-3xl.font-bold.text-white');
+        if (vaultEl) {
+            let currentVal = parseInt(vaultEl.innerText.replace(' π', '').replace(',', ''));
+            vaultEl.innerText = (currentVal + 1).toLocaleString() + " π";
+        }
+    }, 10000);
+}
+
+// تشغيل التحديثات عند تحميل الصفحة
+window.onload = () => {
+    startLiveUpdates();
+    console.log("UniLingo AI: Global Systems Online");
+};
+ /* تأثير الأرقام المتغيرة لإعطاء إحساس بالمعالجة الحية */
 .counter-animate {
     transition: all 0.5s ease-out;
 }
