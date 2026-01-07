@@ -111,21 +111,7 @@ window.onload = () => {
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: var(--deep-space); }
         ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
-    </style>/* تجعل الأرقام تتغير بسلاسة بدل القفز المفاجئ */
-.font-mono, .text-3xl {
-    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* تأثير الوميض لنقطة الحالة */
-.status-dot {
-    animation: pulse-glow 2s infinite;
-}
-
-@keyframes pulse-glow {
-    0% { box-shadow: 0 0 5px #10b981; opacity: 1; }
-    50% { box-shadow: 0 0 20px #10b981; opacity: 0.5; }
-    100% { box-shadow: 0 0 5px #10b981; opacity: 1; }
-}
+    </style>
 
 </head>
 <body class="min-h-screen">
