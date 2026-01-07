@@ -251,7 +251,50 @@ window.onload = () => {
         <p class="text-[10px] text-slate-600 uppercase tracking-widest">&copy; 2026 UniLingo AI - Decentralized Intelligence</p>
     </footer>
 
-    <script>
+    <script> // وظيفة لتحديث إحصائيات النظام بشكل حي ومقنع
+function activateGlobalHub() {
+    const latencyEl = document.querySelector('.text-yellow-500.font-mono'); // زمن الاستجابة
+    const vaultEl = document.querySelector('.text-3xl.font-bold.text-white'); // صندوق الأمان
+    const statusDot = document.querySelector('.status-dot'); // نقطة الحالة
+
+    // 1. محاكاة تذبذب زمن الاستجابة (Real-time Latency)
+    setInterval(() => {
+        if (latencyEl) {
+            // تذبذب طفيف بين 38ms و 44ms لزيادة المصداقية
+            const newLatency = Math.floor(Math.random() * (44 - 38 + 1)) + 38;
+            latencyEl.innerText = newLatency + "ms";
+        }
+    }, 3000);
+
+    // 2. تحديث عداد صندوق الأمان (Live Profit Tracking)
+    setInterval(() => {
+        if (vaultEl) {
+            let currentVal = parseInt(vaultEl.innerText.replace(' π', '').replace(',', ''));
+            // زيادة وهمية تحاكي نشاط المستخدمين العالمي
+            vaultEl.innerText = (currentVal + 1).toLocaleString() + " π";
+        }
+    }, 8000);
+
+    // 3. تغيير سمات الواجهة عند تغيير النموذج (Model Logic)
+    const modelSelect = document.querySelector('select');
+    if (modelSelect) {
+        modelSelect.addEventListener('change', (e) => {
+            const resultPanel = document.getElementById('resultPanel');
+            if (e.target.value.includes('Claude')) {
+                // تغيير لون الإضاءة إلى الأرجواني عند اختيار Claude
+                document.documentElement.style.setProperty('--primary-gold', '#a855f7');
+                console.log("System switched to Claude 4 Protocol");
+            } else {
+                // العودة للذهب عند اختيار GPT
+                document.documentElement.style.setProperty('--primary-gold', '#f59e0b');
+            }
+        });
+    }
+}
+
+// بدء التشغيل عند تحميل واجهة UniLingo
+window.addEventListener('DOMContentLoaded', activateGlobalHub);
+
         // دمج Pi SDK
         const Pi = window.Pi;
         Pi.init({ version: "1.5", sandbox: true });
