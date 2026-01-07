@@ -7,7 +7,21 @@
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style> // وظيفة لتحديث إحصائيات النظام بشكل حي
+    <style><style>
+    /* هذا الكود يجب أن يكون هنا ليعمل دون أن يظهر كنص */
+    .font-mono, .text-3xl { 
+        transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1); 
+    }
+    .status-dot { 
+        animation: pulse-glow 2s infinite; 
+    }
+    @keyframes pulse-glow { 
+        0% { box-shadow: 0 0 5px #10b981; opacity: 1; } 
+        50% { box-shadow: 0 0 20px #10b981; opacity: 0.5; } 
+        100% { box-shadow: 0 0 5px #10b981; opacity: 1; } 
+    }
+</style>
+// وظيفة لتحديث إحصائيات النظام بشكل حي
 function startLiveUpdates() {
     // تحديث زمن الاستجابة بشكل عشوائي بسيط (بين 38ms و 45ms)
     setInterval(() => {
