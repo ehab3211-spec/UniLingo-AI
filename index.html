@@ -1,224 +1,119 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UniLingo AI | Global Command Center</title>
-    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;700&family=IBM+Plex+Sans+Arabic:wght@200;600&display=swap');
-
-        :root {
-            --primary-gold: #f59e0b;
-            --deep-space: #020617;
-            --neon-blue: #38bdf8;
-        }
-
-        body {
-            background-color: var(--deep-space);
-            color: #f8fafc;
-            font-family: 'IBM Plex Sans Arabic', sans-serif;
-            background-image: 
-                radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.05) 0%, transparent 20%),
-                radial-gradient(circle at 90% 80%, rgba(245, 158, 11, 0.05) 0%, transparent 20%);
-        }
-
-        .cyber-panel {
-            background: rgba(15, 23, 42, 0.7);
-            backdrop-filter: blur(25px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 30px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        }
-
-        .service-card {
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 1px solid rgba(255, 255, 255, 0.03);
-        }
-
-        .service-card:hover {
-            background: rgba(245, 158, 11, 0.05);
-            border-color: var(--primary-gold);
-            transform: translateY(-5px);
-        }
-
-        .status-dot {
-            width: 8px; height: 8px;
-            border-radius: 50%;
-            background: #10b981;
-            box-shadow: 0 0 10px #10b981;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
-
-        /* تجميل السكرول بار */
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: var(--deep-space); }
-        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
-    </style>
+  <meta charset="UTF-8">
+  <title>UniLingo-AI Visual Workflow Builder</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; overflow: hidden; }
+    #sidebar { position: absolute; left: 0; top: 0; width: 200px; height: 100vh; background: #f4f4f4; padding: 10px; box-sizing: border-box; }
+    #canvas { position: absolute; left: 200px; top: 0; right: 0; bottom: 0; background: #fff; overflow: hidden; }
+    .node { padding: 10px; border: 2px solid #1a73e8; border-radius: 5px; background: #e8f0fe; position: absolute; cursor: move; user-select: none; }
+    button { width: 100%; margin: 5px 0; padding: 8px; background: #1a73e8; color: #fff; border: none; cursor: pointer; }
+    button:hover { background: #1558b0; }
+    input { width: 100%; margin: 5px 0; padding: 5px; }
+    svg { position: absolute; top: 0; left: 0; pointer-events: none; }
+  </style>
 </head>
-<body class="min-h-screen">
+<body>
 
-    <nav class="border-b border-white/5 bg-black/20 backdrop-blur-md sticky top-0 z-50">
-        <div class="max-w-[1400px] mx-auto px-6 py-4 flex justify-between items-center">
-            <div class="flex items-center gap-4">
-                <div class="text-2xl font-bold tracking-tighter text-white" style="font-family: 'Space Grotesk';">
-                    UNILINGO <span class="text-yellow-500 underline decoration-2 underline-offset-4">AI</span>
-                </div>
-                <div class="hidden md:flex gap-4 text-[10px] uppercase tracking-widest text-slate-500 border-r border-white/10 pr-4">
-                    <span>V4.2 Enterprise</span>
-                    <span>Global Node: Active</span>
-                </div>
-            </div>
-            
-            <div class="flex items-center gap-6">
-                <div class="flex flex-col items-end">
-                    <span class="text-[10px] text-slate-500 uppercase">Pi Balance</span>
-                    <span id="piBalance" class="text-yellow-500 font-bold">124.50 π</span>
-                </div>
-                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-500 to-orange-600 p-[2px]">
-                    <div class="w-full h-full rounded-full bg-slate-900 flex items-center justify-center">
-                        <i class="fa-solid fa-user text-xs"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </nav>
+<div id="sidebar">
+  <h3>Nodes</h3>
+  <button onclick="addNode('generate_text')">Text</button>
+  <button onclick="addNode('generate_image')">Image</button>
+  <button onclick="addNode('generate_audio')">Audio</button>
+  <button onclick="addNode('merge_video')">Merge Video</button>
+  <button onclick="addNode('conditional')">Conditional</button>
+  <hr>
+  <h3>Pi Payment</h3>
+  <input id="userId" placeholder="User ID">
+  <input id="txId" placeholder="Pi Tx ID">
+  <input id="piAmount" type="number" placeholder="Pi Amount">
+  <button onclick="runWorkflow()">Run Workflow</button>
+</div>
 
-    <main class="max-w-[1400px] mx-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        <aside class="lg:col-span-3 space-y-6">
-            <div class="cyber-panel p-6">
-                <h3 class="text-xs font-bold text-slate-500 uppercase mb-4 tracking-tighter">حالة السيرفر العالمي</h3>
-                <div class="space-y-4">
-                    <div class="flex justify-between items-center text-sm">
-                        <span class="text-slate-400">الذكاء الاصطناعي</span>
-                        <span class="text-green-400 font-mono">100% Online</span>
-                    </div>
-                    <div class="w-full bg-slate-800 h-[2px]">
-                        <div class="bg-blue-500 h-full w-[85%]"></div>
-                    </div>
-                    <div class="flex justify-between items-center text-sm">
-                        <span class="text-slate-400">زمن الاستجابة</span>
-                        <span class="text-yellow-500 font-mono">42ms</span>
-                    </div>
-                </div>
-            </div>
+<div id="canvas"></div>
+<svg id="connections"></svg>
 
-            <div class="cyber-panel p-6 bg-gradient-to-b from-yellow-500/5 to-transparent">
-                <h3 class="text-xs font-bold text-slate-500 uppercase mb-4 tracking-tighter text-right">صندوق الأمان (Safety Vault)</h3>
-                <div class="text-center py-4">
-                    <div class="text-3xl font-bold text-white mb-1">5,204 π</div>
-                    <div class="text-[10px] text-slate-500 uppercase italic">الاحتياطي السنوي المغطى</div>
-                </div>
-                <div class="flex gap-2">
-                    <div class="flex-1 h-1 bg-yellow-500"></div>
-                    <div class="flex-1 h-1 bg-yellow-500/20"></div>
-                    <div class="flex-1 h-1 bg-yellow-500/20"></div>
-                </div>
-            </div>
-        </aside>
+<script>
+let nodeId = 0;
+const nodes = [];
+const edges = [];
+const canvas = document.getElementById('canvas');
+const svg = document.getElementById('connections');
 
-        <div class="lg:col-span-6 space-y-6">
-            <div class="cyber-panel p-8 relative overflow-hidden">
-                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-yellow-500 to-transparent opacity-30"></div>
-                
-                <div class="mb-6 flex justify-between items-center">
-                    <div class="flex items-center gap-3">
-                        <div class="status-dot"></div>
-                        <span class="text-xs font-bold uppercase tracking-widest text-slate-400">المعالج الذكي نشط</span>
-                    </div>
-                    <select class="bg-slate-800 border-none rounded-lg text-[10px] px-3 py-1 focus:ring-1 focus:ring-yellow-500 outline-none">
-                        <option>Model: GPT-5 (Omni)</option>
-                        <option>Model: Claude 4 (Opus)</option>
-                    </select>
-                </div>
+function addNode(type) {
+  const node = document.createElement('div');
+  node.className = 'node';
+  node.id = 'node' + nodeId++;
+  node.innerText = type;
+  node.style.left = '50px';
+  node.style.top = (50 + nodes.length * 80) + 'px';
+  node.dataset.type = type;
+  node.dataset.id = node.id;
 
-                <textarea id="mainInput" class="w-full bg-transparent border-none text-2xl md:text-3xl placeholder-slate-700 h-64 focus:ring-0 resize-none text-right leading-relaxed" placeholder="كيف يمكن لـ UniLingo مساعدتك اليوم؟"></textarea>
-                
-                <div class="flex flex-col md:flex-row gap-4 mt-8">
-                    <button onclick="executeAI()" class="flex-[2] bg-yellow-500 hover:bg-yellow-400 text-black font-black py-5 rounded-2xl flex items-center justify-center gap-3 transition-all">
-                        <span>إرسال البيانات للشبكة</span>
-                        <i class="fa-solid fa-paper-plane text-xs"></i>
-                    </button>
-                    <button class="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-5 rounded-2xl transition-all">
-                        <i class="fa-solid fa-microphone text-sm mr-2"></i>
-                        بصمة صوتية
-                    </button>
-                </div>
-            </div>
+  node.draggable = true;
+  node.ondragstart = (e) => {
+    e.dataTransfer.setData('text/plain', node.id);
+  };
 
-            <div id="resultPanel" class="hidden cyber-panel p-8 border-l-4 border-yellow-500 animate-in fade-in slide-in-from-bottom-5">
-                <div class="flex justify-between items-center mb-4">
-                    <span class="text-[10px] font-bold uppercase text-yellow-500">Output Log</span>
-                    <button class="text-slate-500 hover:text-white"><i class="fa-solid fa-copy"></i></button>
-                </div>
-                <div id="aiOutput" class="text-slate-300 text-lg leading-loose text-right"></div>
-            </div>
-        </div>
+  node.onclick = () => {
+    if (selectedNode && selectedNode !== node) {
+      edges.push({ from: selectedNode.id, to: node.id });
+      drawEdges();
+      selectedNode = null;
+    } else {
+      selectedNode = node;
+    }
+  }
 
-        <aside class="lg:col-span-3 space-y-6">
-            <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4">الخدمات العالمية المتاحة</h3>
-            
-            <div class="grid grid-cols-1 gap-4">
-                <div class="service-card p-4 rounded-2xl bg-slate-900/40">
-                    <i class="fa-solid fa-language text-yellow-500 mb-3 text-xl"></i>
-                    <h4 class="font-bold text-sm mb-1">الترجمة العصبية</h4>
-                    <p class="text-[10px] text-slate-500">ترجمة فورية بـ 140 لغة مع فهم السياق الثقافي.</p>
-                </div>
-                <div class="service-card p-4 rounded-2xl bg-slate-900/40">
-                    <i class="fa-solid fa-code text-blue-400 mb-3 text-xl"></i>
-                    <h4 class="font-bold text-sm mb-1">مساعد البرمجة</h4>
-                    <p class="text-[10px] text-slate-500">كتابة وتصحيح الأكواد البرمجية بأحدث اللغات.</p>
-                </div>
-                <div class="service-card p-4 rounded-2xl bg-slate-900/40">
-                    <i class="fa-solid fa-file-invoice text-green-400 mb-3 text-xl"></i>
-                    <h4 class="font-bold text-sm mb-1">التحليل المالي لـ Pi</h4>
-                    <p class="text-[10px] text-slate-500">تحليل حركات السوق وتوقعات عملة Pi Network.</p>
-                </div>
-            </div>
+  canvas.appendChild(node);
+  nodes.push(node);
+  drawEdges();
+}
 
-            <div class="p-6 border border-dashed border-slate-800 rounded-3xl text-center">
-                <p class="text-[10px] text-slate-600 uppercase mb-4 font-bold">عضوية بريميوم</p>
-                <button class="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-[10px] font-black uppercase tracking-widest">تفعيل العضوية الكاملة</button>
-            </div>
-        </aside>
+let selectedNode = null;
 
-    </main>
+function drawEdges() {
+  svg.innerHTML = '';
+  edges.forEach(edge => {
+    const fromNode = document.getElementById(edge.from);
+    const toNode = document.getElementById(edge.to);
+    const fromRect = fromNode.getBoundingClientRect();
+    const toRect = toNode.getBoundingClientRect();
 
-    <footer class="mt-12 p-8 text-center border-t border-white/5">
-        <div class="flex justify-center gap-8 mb-4 text-slate-500">
-            <i class="fa-brands fa-github hover:text-white cursor-pointer"></i>
-            <i class="fa-brands fa-twitter hover:text-white cursor-pointer"></i>
-            <i class="fa-brands fa-discord hover:text-white cursor-pointer"></i>
-        </div>
-        <p class="text-[10px] text-slate-600 uppercase tracking-widest">&copy; 2026 UniLingo AI - Decentralized Intelligence</p>
-    </footer>
+    const x1 = fromRect.left + fromRect.width / 2 - canvas.getBoundingClientRect().left;
+    const y1 = fromRect.top + fromRect.height / 2 - canvas.getBoundingClientRect().top;
+    const x2 = toRect.left + toRect.width / 2 - canvas.getBoundingClientRect().left;
+    const y2 = toRect.top + toRect.height / 2 - canvas.getBoundingClientRect().top;
 
-    <script>
-        // دمج Pi SDK
-        const Pi = window.Pi;
-        Pi.init({ version: "1.5", sandbox: true });
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute('x1', x1);
+    line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2);
+    line.setAttribute('y2', y2);
+    line.setAttribute('stroke', '#1a73e8');
+    line.setAttribute('stroke-width', 2);
+    svg.appendChild(line);
+  });
+}
 
-        async function executeAI() {
-            const input = document.getElementById('mainInput').value;
-            if(!input) return;
+function runWorkflow() {
+  const userId = document.getElementById('userId').value;
+  const txId = document.getElementById('txId').value;
+  const piAmount = parseFloat(document.getElementById('piAmount').value);
 
-            // محاكاة طلب دفع وتحميل
-            const resultPanel = document.getElementById('resultPanel');
-            const aiOutput = document.getElementById('aiOutput');
-            
-            aiOutput.innerHTML = "<div class='flex gap-1'><div class='w-2 h-2 bg-yellow-500 animate-bounce'></div><div class='w-2 h-2 bg-yellow-500 animate-bounce delay-100'></div><div class='w-2 h-2 bg-yellow-500 animate-bounce delay-200'></div></div>";
-            resultPanel.classList.remove('hidden');
+  const workflow = nodes.map(n => ({ action: n.dataset.type }));
 
-            // محاكاة استجابة من نموذج عالمي
-            setTimeout(() => {
-                aiOutput.innerText = "تحليل UniLingo AI المتقدم: بناءً على مدخلاتك، قمنا بتحليل البيانات ومقارنتها بقواعد المعرفة العالمية لعام 2026. النتيجة تظهر كفاءة بنسبة 99.4% في التنفيذ المطلوب.";
-            }, 3000);
-        }
-    </script>
+  fetch('http://localhost:3000/command', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, txId, requiredPi: piAmount, command: workflow })
+  })
+  .then(res => res.json())
+  .then(data => alert(JSON.stringify(data, null, 2)))
+  .catch(err => alert(err.message));
+}
+</script>
+
 </body>
 </html>
