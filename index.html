@@ -1,34 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>UniLingo-AI Visual Workflow Builder</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 0; overflow: hidden; }
-    #sidebar { position: absolute; left: 0; top: 0; width: 200px; height: 100vh; background: #f4f4f4; padding: 10px; box-sizing: border-box; }
-    #canvas { position: absolute; left: 200px; top: 0; right: 0; bottom: 0; background: #fff; overflow: hidden; }
-    .node { padding: 10px; border: 2px solid #1a73e8; border-radius: 5px; background: #e8f0fe; position: absolute; cursor: move; user-select: none; }
-    button { width: 100%; margin: 5px 0; padding: 8px; background: #1a73e8; color: #fff; border: none; cursor: pointer; }
-    button:hover { background: #1558b0; }
-    input { width: 100%; margin: 5px 0; padding: 5px; }
-    svg { position: absolute; top: 0; left: 0; pointer-events: none; }
-  </style>
+<meta charset="UTF-8">
+<title>UniLingo-AI Visual Workflow Builder</title>
+<style>
+  body { font-family: Arial, sans-serif; margin:0; overflow:hidden; }
+  #sidebar { position:absolute; left:0; top:0; width:220px; height:100vh; background:#f4f4f4; padding:10px; box-sizing:border-box; overflow-y:auto; }
+  #canvas { position:absolute; left:220px; top:0; right:0; bottom:0; background:#fff; overflow:hidden; }
+  .node { padding:10px; border:2px solid #1a73e8; border-radius:5px; background:#e8f0fe; position:absolute; cursor:move; user-select:none; }
+  .node.parallel { background:#ffd966; border-color:#f2994a; }
+  .node.conditional { background:#cfe2f3; border-color:#2f80ed; }
+  .node.plugin { background:#d5a6bd; border-color:#9b51e0; }
+  button { width:100%; margin:5px 0; padding:8px; background:#1a73e8; color:#fff; border:none; cursor:pointer; }
+  button:hover { background:#1558b0; }
+  input { width:100%; margin:5px 0; padding:5px; }
+  svg { position:absolute; top:0; left:0; pointer-events:none; }
+  h3 { margin-top:15px; }
+</style>
 </head>
 <body>
 
 <div id="sidebar">
-  <h3>Nodes</h3>
-  <button onclick="addNode('generate_text')">Text</button>
-  <button onclick="addNode('generate_image')">Image</button>
-  <button onclick="addNode('generate_audio')">Audio</button>
-  <button onclick="addNode('merge_video')">Merge Video</button>
-  <button onclick="addNode('conditional')">Conditional</button>
-  <hr>
-  <h3>Pi Payment</h3>
-  <input id="userId" placeholder="User ID">
-  <input id="txId" placeholder="Pi Tx ID">
-  <input id="piAmount" type="number" placeholder="Pi Amount">
-  <button onclick="runWorkflow()">Run Workflow</button>
+<h3>Nodes</h3>
+<button onclick="addNode('generate_text')">Text</button>
+<button onclick="addNode('generate_image')">Image</button>
+<button onclick="addNode('generate_audio')">Audio</button>
+<button onclick="addNode('merge_video')">Merge Video</button>
+<button onclick="addNode('parallel')">Parallel</button>
+<button onclick="addNode('conditional')">If-Else</button>
+<button onclick="addNode('plugin')">Plugin</button>
+
+<hr>
+<h3>Pi Payment</h3>
+<input id="userId" placeholder="User ID">
+<input id="txId" placeholder="Pi Tx ID">
+<input id="piAmount" type="number" placeholder="Pi Amount">
+<button onclick="runWorkflow()">Run Workflow</button>
 </div>
 
 <div id="canvas"></div>
@@ -43,7 +50,7 @@ const svg = document.getElementById('connections');
 
 function addNode(type) {
   const node = document.createElement('div');
-  node.className = 'node';
+  node.className = 'node ' + (type==='parallel'?'parallel':type==='conditional'?'conditional':type==='plugin'?'plugin':'');
   node.id = 'node' + nodeId++;
   node.innerText = type;
   node.style.left = '50px';
@@ -52,9 +59,7 @@ function addNode(type) {
   node.dataset.id = node.id;
 
   node.draggable = true;
-  node.ondragstart = (e) => {
-    e.dataTransfer.setData('text/plain', node.id);
-  };
+  node.ondragstart = (e) => e.dataTransfer.setData('text/plain', node.id);
 
   node.onclick = () => {
     if (selectedNode && selectedNode !== node) {
@@ -65,6 +70,19 @@ function addNode(type) {
       selectedNode = node;
     }
   }
+
+  node.onmousedown = (e) => {
+    const shiftX = e.clientX - node.getBoundingClientRect().left;
+    const shiftY = e.clientY - node.getBoundingClientRect().top;
+    function moveAt(pageX, pageY) {
+      node.style.left = pageX - shiftX - canvas.getBoundingClientRect().left + 'px';
+      node.style.top = pageY - shiftY - canvas.getBoundingClientRect().top + 'px';
+      drawEdges();
+    }
+    function onMouseMove(e) { moveAt(e.pageX, e.pageY); }
+    document.addEventListener('mousemove', onMouseMove);
+    document.onmouseup = () => { document.removeEventListener('mousemove', onMouseMove); document.onmouseup=null; };
+  };
 
   canvas.appendChild(node);
   nodes.push(node);
@@ -80,20 +98,26 @@ function drawEdges() {
     const toNode = document.getElementById(edge.to);
     const fromRect = fromNode.getBoundingClientRect();
     const toRect = toNode.getBoundingClientRect();
-
-    const x1 = fromRect.left + fromRect.width / 2 - canvas.getBoundingClientRect().left;
-    const y1 = fromRect.top + fromRect.height / 2 - canvas.getBoundingClientRect().top;
-    const x2 = toRect.left + toRect.width / 2 - canvas.getBoundingClientRect().left;
-    const y2 = toRect.top + toRect.height / 2 - canvas.getBoundingClientRect().top;
-
+    const x1 = fromRect.left + fromRect.width/2 - canvas.getBoundingClientRect().left;
+    const y1 = fromRect.top + fromRect.height/2 - canvas.getBoundingClientRect().top;
+    const x2 = toRect.left + toRect.width/2 - canvas.getBoundingClientRect().left;
+    const y2 = toRect.top + toRect.height/2 - canvas.getBoundingClientRect().top;
     const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-    line.setAttribute('x1', x1);
-    line.setAttribute('y1', y1);
-    line.setAttribute('x2', x2);
-    line.setAttribute('y2', y2);
-    line.setAttribute('stroke', '#1a73e8');
-    line.setAttribute('stroke-width', 2);
+    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+    line.setAttribute('stroke', '#1a73e8'); line.setAttribute('stroke-width', 2);
     svg.appendChild(line);
+  });
+}
+
+function buildWorkflow() {
+  // تحويل Nodes إلى JSON Workflow
+  return nodes.map(node=>{
+    const obj = { action: node.dataset.type };
+    const children = edges.filter(e=>e.from===node.id).map(e=>e.to);
+    if(node.dataset.type==='parallel') obj.parallel = children.map(cid=>({ action: document.getElementById(cid).dataset.type }));
+    if(node.dataset.type==='conditional') obj.if = "true"; obj.then=[{ action:'generate_text' }]; obj.else=[{ action:'log_only' }];
+    return obj;
   });
 }
 
@@ -101,19 +125,17 @@ function runWorkflow() {
   const userId = document.getElementById('userId').value;
   const txId = document.getElementById('txId').value;
   const piAmount = parseFloat(document.getElementById('piAmount').value);
-
-  const workflow = nodes.map(n => ({ action: n.dataset.type }));
+  const workflow = buildWorkflow();
 
   fetch('http://localhost:3000/command', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ userId, txId, requiredPi: piAmount, command: workflow })
   })
-  .then(res => res.json())
-  .then(data => alert(JSON.stringify(data, null, 2)))
-  .catch(err => alert(err.message));
+  .then(res=>res.json())
+  .then(data=>alert(JSON.stringify(data,null,2)))
+  .catch(err=>alert(err.message));
 }
 </script>
-
 </body>
 </html>
