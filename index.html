@@ -2,26 +2,40 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>UniLingo-AI Visual Workflow Builder</title>
+<title>UniLingo AI - Ultimate Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <style>
-  body { font-family: Arial, sans-serif; margin:0; overflow:hidden; }
-  #sidebar { position:absolute; left:0; top:0; width:220px; height:100vh; background:#f4f4f4; padding:10px; box-sizing:border-box; overflow-y:auto; }
-  #canvas { position:absolute; left:220px; top:0; right:0; bottom:0; background:#fff; overflow:hidden; }
-  .node { padding:10px; border:2px solid #1a73e8; border-radius:5px; background:#e8f0fe; position:absolute; cursor:move; user-select:none; }
-  .node.parallel { background:#ffd966; border-color:#f2994a; }
-  .node.conditional { background:#cfe2f3; border-color:#2f80ed; }
-  .node.plugin { background:#d5a6bd; border-color:#9b51e0; }
-  button { width:100%; margin:5px 0; padding:8px; background:#1a73e8; color:#fff; border:none; cursor:pointer; }
-  button:hover { background:#1558b0; }
-  input { width:100%; margin:5px 0; padding:5px; }
-  svg { position:absolute; top:0; left:0; pointer-events:none; }
-  h3 { margin-top:15px; }
+/* ==== GLOBAL ==== */
+body { margin:0; font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #1f1c2c, #928dab); color:#fff; overflow:hidden; }
+button { cursor:pointer; border:none; border-radius:6px; font-weight:600; transition:0.3s; }
+input, textarea { border-radius:6px; border:none; padding:8px; margin:5px 0; width:100%; box-sizing:border-box; font-size:14px; }
+h3 { margin:10px 0; color:#ffd700; }
+/* ==== SIDEBAR ==== */
+#sidebar { position:absolute; left:0; top:0; width:260px; height:100vh; background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); padding:15px; overflow-y:auto; }
+/* ==== CANVAS ==== */
+#canvas { position:absolute; left:260px; top:0; right:0; bottom:0; background: rgba(255,255,255,0.05); }
+/* ==== SVG CONNECTIONS ==== */
+svg { position:absolute; top:0; left:0; pointer-events:none; }
+/* ==== NODES ==== */
+.node { padding:12px 15px; border:2px solid #ffd700; border-radius:10px; background:rgba(0,0,0,0.6); position:absolute; cursor:grab; user-select:none; transition:0.2s; }
+.node:hover { transform:scale(1.05); box-shadow:0 0 20px #ffd700; }
+.node.parallel { background: rgba(255,150,0,0.7); border-color:#ff9900; }
+.node.conditional { background: rgba(50,150,255,0.7); border-color:#0099ff; }
+.node.plugin { background: rgba(200,0,255,0.7); border-color:#bb00ff; }
+/* ==== BUTTONS ==== */
+button:hover { opacity:0.85; }
+/* ==== RESULTS PANEL ==== */
+#results { position:absolute; bottom:10px; right:10px; width:350px; max-height:45%; background:rgba(0,0,0,0.6); border-radius:10px; overflow-y:auto; padding:10px; box-shadow:0 0 15px #ffd700; }
+#results h4 { margin:0 0 5px 0; color:#ffd700; }
+.result-item { margin-bottom:8px; background: rgba(255,255,255,0.1); padding:5px; border-radius:6px; font-size:13px; }
 </style>
 </head>
 <body>
 
 <div id="sidebar">
-<h3>Nodes</h3>
+<h2>UniLingo AI Dashboard</h2>
+
+<h3>Add Node</h3>
 <button onclick="addNode('generate_text')">Text</button>
 <button onclick="addNode('generate_image')">Image</button>
 <button onclick="addNode('generate_audio')">Audio</button>
@@ -33,55 +47,60 @@
 <hr>
 <h3>Pi Payment</h3>
 <input id="userId" placeholder="User ID">
-<input id="txId" placeholder="Pi Tx ID">
+<input id="txId" placeholder="Pi Transaction ID">
 <input id="piAmount" type="number" placeholder="Pi Amount">
 <button onclick="runWorkflow()">Run Workflow</button>
+
 </div>
 
 <div id="canvas"></div>
 <svg id="connections"></svg>
 
+<div id="results"><h4>Results:</h4></div>
+
 <script>
+/* ==== VARIABLES ==== */
 let nodeId = 0;
 const nodes = [];
 const edges = [];
 const canvas = document.getElementById('canvas');
 const svg = document.getElementById('connections');
+const resultsPanel = document.getElementById('results');
 
+/* ==== ADD NODE ==== */
 function addNode(type) {
   const node = document.createElement('div');
   node.className = 'node ' + (type==='parallel'?'parallel':type==='conditional'?'conditional':type==='plugin'?'plugin':'');
-  node.id = 'node' + nodeId++;
+  node.id = 'node'+nodeId++;
   node.innerText = type;
   node.style.left = '50px';
-  node.style.top = (50 + nodes.length * 80) + 'px';
+  node.style.top = (50 + nodes.length*90)+'px';
   node.dataset.type = type;
   node.dataset.id = node.id;
 
-  node.draggable = true;
-  node.ondragstart = (e) => e.dataTransfer.setData('text/plain', node.id);
+  /* DRAG & DROP */
+  node.onmousedown = (e) => {
+    const shiftX = e.clientX - node.getBoundingClientRect().left;
+    const shiftY = e.clientY - node.getBoundingClientRect().top;
+    function moveAt(pageX,pageY){
+      node.style.left = pageX - shiftX - canvas.getBoundingClientRect().left + 'px';
+      node.style.top = pageY - shiftY - canvas.getBoundingClientRect().top + 'px';
+      drawEdges();
+    }
+    function onMouseMove(e){ moveAt(e.pageX,e.pageY); }
+    document.addEventListener('mousemove',onMouseMove);
+    document.onmouseup = () => { document.removeEventListener('mousemove',onMouseMove); document.onmouseup=null; };
+  };
 
+  /* SELECT FOR EDGE CONNECTION */
   node.onclick = () => {
-    if (selectedNode && selectedNode !== node) {
-      edges.push({ from: selectedNode.id, to: node.id });
+    if(selectedNode && selectedNode !== node){
+      edges.push({from:selectedNode.id,to:node.id});
       drawEdges();
       selectedNode = null;
     } else {
       selectedNode = node;
     }
-  }
-
-  node.onmousedown = (e) => {
-    const shiftX = e.clientX - node.getBoundingClientRect().left;
-    const shiftY = e.clientY - node.getBoundingClientRect().top;
-    function moveAt(pageX, pageY) {
-      node.style.left = pageX - shiftX - canvas.getBoundingClientRect().left + 'px';
-      node.style.top = pageY - shiftY - canvas.getBoundingClientRect().top + 'px';
-      drawEdges();
-    }
-    function onMouseMove(e) { moveAt(e.pageX, e.pageY); }
-    document.addEventListener('mousemove', onMouseMove);
-    document.onmouseup = () => { document.removeEventListener('mousemove', onMouseMove); document.onmouseup=null; };
   };
 
   canvas.appendChild(node);
@@ -91,51 +110,60 @@ function addNode(type) {
 
 let selectedNode = null;
 
-function drawEdges() {
-  svg.innerHTML = '';
-  edges.forEach(edge => {
+/* ==== DRAW EDGES ==== */
+function drawEdges(){
+  svg.innerHTML='';
+  edges.forEach(edge=>{
     const fromNode = document.getElementById(edge.from);
     const toNode = document.getElementById(edge.to);
-    const fromRect = fromNode.getBoundingClientRect();
-    const toRect = toNode.getBoundingClientRect();
-    const x1 = fromRect.left + fromRect.width/2 - canvas.getBoundingClientRect().left;
-    const y1 = fromRect.top + fromRect.height/2 - canvas.getBoundingClientRect().top;
-    const x2 = toRect.left + toRect.width/2 - canvas.getBoundingClientRect().left;
-    const y2 = toRect.top + toRect.height/2 - canvas.getBoundingClientRect().top;
-    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
-    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
-    line.setAttribute('stroke', '#1a73e8'); line.setAttribute('stroke-width', 2);
+    const f = fromNode.getBoundingClientRect();
+    const t = toNode.getBoundingClientRect();
+    const x1=f.left+f.width/2-canvas.getBoundingClientRect().left;
+    const y1=f.top+f.height/2-canvas.getBoundingClientRect().top;
+    const x2=t.left+t.width/2-canvas.getBoundingClientRect().left;
+    const y2=t.top+t.height/2-canvas.getBoundingClientRect().top;
+    const line = document.createElementNS("http://www.w3.org/2000/svg","line");
+    line.setAttribute('x1',x1); line.setAttribute('y1',y1);
+    line.setAttribute('x2',x2); line.setAttribute('y2',y2);
+    line.setAttribute('stroke','#ffd700'); line.setAttribute('stroke-width',2);
     svg.appendChild(line);
   });
 }
 
-function buildWorkflow() {
-  // تحويل Nodes إلى JSON Workflow
+/* ==== BUILD WORKFLOW JSON ==== */
+function buildWorkflow(){
   return nodes.map(node=>{
-    const obj = { action: node.dataset.type };
+    const obj = {action: node.dataset.type};
     const children = edges.filter(e=>e.from===node.id).map(e=>e.to);
-    if(node.dataset.type==='parallel') obj.parallel = children.map(cid=>({ action: document.getElementById(cid).dataset.type }));
-    if(node.dataset.type==='conditional') obj.if = "true"; obj.then=[{ action:'generate_text' }]; obj.else=[{ action:'log_only' }];
+    if(node.dataset.type==='parallel') obj.parallel = children.map(cid=>({action:document.getElementById(cid).dataset.type}));
+    if(node.dataset.type==='conditional') obj.if="true"; obj.then=[{action:'generate_text'}]; obj.else=[{action:'log_only'}];
     return obj;
   });
 }
 
-function runWorkflow() {
+/* ==== RUN WORKFLOW ==== */
+function runWorkflow(){
   const userId = document.getElementById('userId').value;
   const txId = document.getElementById('txId').value;
   const piAmount = parseFloat(document.getElementById('piAmount').value);
   const workflow = buildWorkflow();
 
-  fetch('http://localhost:3000/command', {
-    method: 'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ userId, txId, requiredPi: piAmount, command: workflow })
+  axios.post('http://localhost:3000/command',{
+    userId, txId, requiredPi:piAmount, command:workflow
   })
-  .then(res=>res.json())
-  .then(data=>alert(JSON.stringify(data,null,2)))
-  .catch(err=>alert(err.message));
+  .then(res=>{
+    const data=res.data;
+    const item=document.createElement('div'); item.className='result-item'; item.innerText=JSON.stringify(data,null,2);
+    resultsPanel.appendChild(item);
+    resultsPanel.scrollTop = resultsPanel.scrollHeight;
+  })
+  .catch(err=>{
+    const item=document.createElement('div'); item.className='result-item'; item.innerText='Error: '+(err.response?.data?.message||err.message);
+    resultsPanel.appendChild(item);
+    resultsPanel.scrollTop = resultsPanel.scrollHeight;
+  });
 }
 </script>
+
 </body>
 </html>
